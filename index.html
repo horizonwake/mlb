@@ -4,11 +4,20 @@
     <link rel="stylesheet" href="main.css" />
     <script>
       const IS_OK = 200;
-      function populateSelectDay() {
+      function populateOptions() {
+        const currentYear = new Date().getFullYear();
+        document.getElementById("info").innerHTML = `Use the form below to search game stats from 1901 - ${currentYear}`;
+
         const daySelect = document.getElementById("day");
         for (let index = 1; index <= 31; index++) {
           let option = `<option value="${index}">${index}</option>`;
           daySelect.innerHTML += option;
+        }
+
+        const yearSelect = document.getElementById("year");
+        for (let index = 1901; index <= currentYear; index++) {
+          let option = `<option value="${index}">${index}</option>`;
+          yearSelect.innerHTML += option;
         }
         // User messages for errors and game count
         const errMsg = document.getElementById("errMsg");
@@ -124,7 +133,7 @@
               populateData();
             } else {
               errMsg.innerHTML =
-                "There were no games on the selected date.<br>Please try another.";
+                "There were no games on the selected date.<br>Please try another.<br>";
             }
           } else {
             errMsg.innerHTML =
@@ -142,26 +151,29 @@
         const month = document.getElementById("month").value;
         const year = document.getElementById("year").value;
         const date = `${month}/${(day < 10 ? "0" : "") + day}/${year}`;
-
-        getJSONAsync(
-          `https://statsapi.mlb.com/api/v1/schedule/games/?sportId=1&date=${date}`
-        );
+        console.log(day);
+        if (day && month && year) {
+          getJSONAsync(
+            `https://statsapi.mlb.com/api/v1/schedule/games/?sportId=1&date=${date}`
+          );
+        } else {
+            errMsg.innerHTML =
+              "please select a year, month, and day to retrieve game information.";
+          }
       }
     </script>
   </head>
-  <body onload="populateSelectDay();">
+  <body onload="populateOptions();">
     <div class="text-field-container">
       <img src="./img/MLB.png" alt="MLB Logo" />
+      <p id="info"/>
     </div>
     <div class="container">
       <select winningScore="year" id="year">
-        <option class="placeholder" disabled selected>Year</option>
-        <option value="2020">2020</option>
-        <option value="2021">2021</option>
-        <option value="2022">2022</option>
+        <option class="placeholder" value="" disabled selected>Year</option>
       </select>
       <select winningScore="month" id="month">
-        <option class="placeholder" disabled selected>Month</option>
+        <option class="placeholder" value="" disabled selected>Month</option>
         <option value="01">January</option>
         <option value="02">February</option>
         <option value="03">March</option>
@@ -176,7 +188,7 @@
         <option value="12">December</option>
       </select>
       <select winningScore="day" id="day">
-        <option class="placeholder" disabled selected>Day</option>
+        <option class="placeholder" value="" disabled selected>Day</option>
       </select>
       <br />
       <input
