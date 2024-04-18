@@ -1,0 +1,218 @@
+<html>
+  <head>
+    <title>MLB Form - Kelsey Larsen</title>
+    <link rel="stylesheet" href="main.css" />
+    <script>
+      const IS_OK = 200;
+      function populateSelectDay() {
+        const daySelect = document.getElementById("day");
+        for (let index = 1; index <= 31; index++) {
+          let option = `<option value="${index}">${index}</option>`;
+          daySelect.innerHTML += option;
+        }
+        // User messages for errors and game count
+        const errMsg = document.getElementById("errMsg");
+        const gameMsg = document.getElementById("gameMsg");
+      }
+      let gameIdx = 0;
+
+      function getJSONAsync(url, next, previous) {
+        var request = new XMLHttpRequest();
+
+        request.onload = function () {
+          if (request.status === IS_OK) {
+            // parse JSON string into js object
+            let data = JSON.parse(request.responseText);
+            if (data.dates[0]) {
+              const gamesArray = data.dates[0].games;
+              errMsg.innerHTML = ""; // reset error message when we receive data
+              gameMsg.innerHTML = `Game ${gameIdx + 1}/${gamesArray.length}`;
+              let currentGame = data.dates[0].games[gameIdx];
+
+              // html elements into variables
+              const homeTeamName = document.getElementById("homeTeamName");
+              const awayTeamName = document.getElementById("num");
+              const winningScore = document.getElementById("winningScore");
+              const losingScore = document.getElementById("losingScore");
+              const venue = document.getElementById("venue");
+              const nextBtn = document.getElementById("btnNext");
+              const prevBtn = document.getElementById("btnPrevious");
+              const btnSaveChanges = document.getElementById("btnSaveChanges");
+
+              // define and assign onclick functions to prev and next buttons
+              nextBtn.onclick = nextGame;
+              prevBtn.onclick = previousGame;
+              btnSaveChanges.onclick = saveChanges;
+
+              // increment id and repopulate fields, reset at last game index
+              function nextGame() {
+                if (currentGame === gamesArray[gamesArray.length - 1]) {
+                  gameIdx = 0; // reset id
+                } else {
+                  gameIdx++;
+                }
+
+                currentGame = gamesArray[gameIdx];
+                gameMsg.innerHTML = `Game ${gameIdx + 1}/${gamesArray.length}`;
+                populateData();
+              }
+
+              // decrement id and reset to last index at first index, repopulate fields
+              function previousGame() {
+                if (currentGame === gamesArray[0]) {
+                  gameIdx = gamesArray.length - 1; // reset idx
+                } else {
+                  gameIdx--;
+                }
+                currentGame = gamesArray[gameIdx];
+                gameMsg.innerHTML = `Game ${gameIdx + 1}/${gamesArray.length}`;
+                populateData();
+              }
+
+              // Save changes to json object
+              function saveChanges() {
+                currentGame.teams.home.team.name = homeTeamName.value;
+                currentGame.teams.away.team.name = awayTeamName.value;
+                currentGame.winningScoreUpdate = winningScore.value;
+                currentGame.losingScoreUpdate = losingScore.value;
+                currentGame.venue.name = venue.value;
+              }
+
+              // populate fields with data from http request
+              function populateData() {
+                // Store winning and losing scores based on isWinner boolean
+                // If user update is applied via saveChanges we instead store updated value
+                const winningScoreValue = currentGame.teams.home.isWinner
+                  ? currentGame.winningScoreUpdate ||
+                    currentGame.teams.home.score
+                  : currentGame.winningScoreUpdate ||
+                    currentGame.teams.away.score;
+
+                const losingScoreValue = currentGame.teams.home.isWinner
+                  ? currentGame.losingScoreUpdate ||
+                    currentGame.teams.away.score
+                  : currentGame.losingScoreUpdate ||
+                    currentGame.teams.home.score;
+
+                const gameStatus = currentGame.status.detailedState;
+
+                homeTeamName.value = currentGame.teams.home.team.name;
+                awayTeamName.value = currentGame.teams.away.team.name;
+                winningScore.value = validateScore(winningScoreValue);
+                losingScore.value = validateScore(losingScoreValue);
+                venue.value = currentGame.venue.name;
+              }
+
+              // validate score based on game status and user update
+              function validateScore(score) {
+                const gameStatus = currentGame.status.detailedState;
+
+                if (currentGame.winningScoreUpdate) {
+                  return score;
+                }
+
+                if (currentGame.losingScoreUpdate) {
+                  return score;
+                }
+
+                // games that are postponed to not have a score so we let the user know game status
+                return gameStatus === "Postponed"
+                  ? `Game ${gameStatus}`
+                  : score;
+              }
+
+              populateData();
+            } else {
+              errMsg.innerHTML =
+                "There were no games on the selected date.<br>Please try another.";
+            }
+          } else {
+            errMsg.innerHTML =
+              "please select a year, month, and day to retrieve game information.";
+          }
+        };
+
+        request.open("GET", url, true);
+        request.send();
+      }
+
+      function getDataAsync() {
+        gameIdx = 0; // reset idx when new data is received
+        const day = document.getElementById("day").value;
+        const month = document.getElementById("month").value;
+        const year = document.getElementById("year").value;
+        const date = `${month}/${(day < 10 ? "0" : "") + day}/${year}`;
+
+        getJSONAsync(
+          `http://statsapi.mlb.com/api/v1/schedule/games/?sportId=1&date=${date}`
+        );
+      }
+    </script>
+  </head>
+  <body onload="populateSelectDay();">
+    <div class="text-field-container">
+      <img src="./img/MLB.png" alt="MLB Logo" />
+    </div>
+    <div class="container">
+      <select winningScore="year" id="year">
+        <option class="placeholder" disabled selected>Year</option>
+        <option value="2020">2020</option>
+        <option value="2021">2021</option>
+        <option value="2022">2022</option>
+      </select>
+      <select winningScore="month" id="month">
+        <option class="placeholder" disabled selected>Month</option>
+        <option value="01">January</option>
+        <option value="02">February</option>
+        <option value="03">March</option>
+        <option value="04">April</option>
+        <option value="05">May</option>
+        <option value="06">June</option>
+        <option value="07">July</option>
+        <option value="08">August</option>
+        <option value="09">September</option>
+        <option value="10">October</option>
+        <option value="11">November</option>
+        <option value="12">December</option>
+      </select>
+      <select winningScore="day" id="day">
+        <option class="placeholder" disabled selected>Day</option>
+      </select>
+      <br />
+      <input
+        type="button"
+        id="btnRetrieve"
+        value="Retrieve"
+        onclick="getDataAsync();"
+      />
+      <br />
+      <span id="errMsg"></span>
+      <span id="gameMsg"></span>
+    </div>
+    <div class="text-field-container">
+      Home Team Name: <br />
+      <input type="text" id="homeTeamName" />
+      <br /><br />
+      Away Team Name: <br />
+      <input type="text" id="num" />
+      <br /><br />
+      Winning Score: <br />
+      <input type="text" id="winningScore" />
+      <br /><br />
+      Losing Score: <br />
+      <input type="text" id="losingScore" />
+      <br /><br />
+      Venue: <br />
+      <input type="text" id="venue" />
+      <br />
+      <div class="btn-container">
+        <input type="button" id="btnSaveChanges" value="Save Changes" />
+      </div>
+
+      <div class="btn-container">
+        <input type="button" id="btnPrevious" value="Previous Game" />
+        <input type="button" id="btnNext" value="Next Game" />
+      </div>
+    </div>
+  </body>
+</html>
