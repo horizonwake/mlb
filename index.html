@@ -144,7 +144,7 @@
         const date = `${month}/${(day < 10 ? "0" : "") + day}/${year}`;
 
         getJSONAsync(
-          `http://statsapi.mlb.com/api/v1/schedule/games/?sportId=1&date=${date}`
+          `https://statsapi.mlb.com/api/v1/schedule/games/?sportId=1&date=${date}`
         );
       }
     </script>
